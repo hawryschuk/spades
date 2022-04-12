@@ -1,0 +1,33 @@
+<section class="middle" #scrollMe [scrollTop]="scrollTop$|async">
+    <code id="stdout" [ngClass]="{empty:!terminal.buffer}">
+        {{terminal.buffer}}
+    </code>
+
+    <div id="prompt" *ngIf="terminal.prompted as prompt">
+        <div class="message">{{prompt.message}}</div>
+
+        <form *ngIf="prompt.type=='number'"
+            (ngSubmit)="terminal.respond(number_input.value.length ? Number(number_input.value) : prompt.initial)">
+            <input name="number_input" #number_input type="number" [min]="prompt.min" [max]="prompt.max"
+                [placeholder]="prompt.initial" [placeholder]="prompt.min + '-' + prompt.max">
+        </form>
+
+        <form *ngIf="prompt.type=='select'">
+            <br>
+            <fieldset [attr.data-disabled]="choice.disabled" *ngFor="let choice of prompt.choices; let i = index">
+                <input id="choice{{i}}" name="choice" type="radio" [value]="choice.value"
+                    [attr.disabled]="choice.disabled?1:null" (keyup.enter)="terminal.respond(choice.value)" />
+                <label (click)="respond(choice.value)" [title]="choice.description">{{choice.title}}</label>
+            </fieldset>
+        </form>
+
+        <form *ngIf="prompt.type=='text'" (ngSubmit)="terminal.respond(input.value||prompt.initial)">
+            <input #input [placeholder]="prompt.initial" type="text" value>
+        </form>
+
+        <ng-container *ngIf="prompt.type=='confirm' || prompt.type=='toggle'">
+            <button (click)="terminal.respond(false)">no</button>
+            <button (click)="terminal.respond(true)">yes</button>
+        </ng-container>
+    </div>
+</section>

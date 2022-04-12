@@ -1,0 +1,181 @@
+$buttonheight:30px;
+
+:host {
+    background-color: lightblue;
+    position: relative;
+    width: 350px;
+    height : 575px;
+    overflow: hidden;
+    display: block;
+
+    .ack_game, .ack_hand { 
+        background-color: white;
+        border:1px solid black;
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        margin-left: 107px;
+        margin-top: 210px;
+        z-index: 1000;
+     }
+
+    .north { margin-top: 10px; margin-left: 138px; }
+    .west { margin-top: 240px; margin-left: 3px; }
+    .east { margin-top: 240px; margin-left: 275px; }
+
+    .west,.east { .name { background-color: brown; } }
+    .north,.south { .name { background-color: green; } }
+    .north, .west, .east {
+        position: absolute;
+        border:1px solid blue;
+        width: 74px; 
+        height: 100px;
+        .buttons { position: absolute;}
+        .name {  margin-top: 61px; }
+    }
+
+    // dev-mode-design-tracing
+    img { width: 100%; height: 100%; }
+    img { display: none; }
+    
+    // ui-elements
+    #your-bid {
+        position            :absolute;
+        width               :330px; 
+        height              :120px;
+        margin-left         :12px;
+        margin-top          :120px;
+        background-color    :lightgreen;
+        opacity: 90%;
+
+        .dot {
+            position: absolute;
+            width: 15px; height: 15px;
+            margin-top: 30px;
+            background-color: blue;
+            &[data-value="_"]{ background-color: grey;}
+            &[data-value="R"]{ background-color: red;}
+            &[data-value="G"]{ background-color: green;}
+            &.claimed{ background-color: green;}
+            &:hover { background-color: darkolivegreen; }
+            &.clashed{ background-color: black;}
+        }
+    }
+
+    .bid-dot {
+        position: absolute;
+        margin-top: 75px;
+        width: 7px;
+        height: 7px;
+        &[data-value="G"]{ background-color: green;}
+        &[data-value="_"]{ background-color: grey;}
+        &[data-value="R"]{ background-color: red;}
+        &[data-value="X"]{ background-color: black;}
+    }
+
+    .book-dot {
+        position: absolute;
+        margin-top: 85px;
+        width: 7px;
+        height: 23px;
+        &[data-value="G"]{ background-color: green;}
+        &[data-value="_"]{ background-color: grey;}
+        &[data-value="R"]{ background-color: red;}
+    }
+
+    .name {
+        position: absolute; 
+        color: yellow;
+        font-weight: bold;
+        text-align: center;
+        height: 20px;
+        width: 70px;
+        padding: 2px;
+        overflow: hidden;
+    }
+
+    .score {
+        position: absolute;
+        margin-left: 5px;
+        background-color: brown;
+        font-weight: bold;
+        color: yellow;
+        border: 1px solid gold;
+        width: 122px;
+        height: 24px;
+        padding: 3px;
+        .amount {
+            position: absolute;
+            z-index: 300;
+        }
+        .completed {
+            z-index: 200;
+            position:absolute; 
+            height: 22px; 
+            padding: -3px;
+            background-color: green;             
+        }
+        &.our-score { margin-top: 2px; }
+        &.their-score { margin-top: 38px; }
+    }
+    
+    .status-message {
+        position: absolute;
+        background-color: yellow;
+        color: black;
+        border: 1px solid black;
+        text-align: center;
+        font-weight: bold;
+        width: 117px;
+        height: 24px;
+        padding: 2px;
+        margin-left: 115px;
+        margin-top: 400px;
+    }
+
+    .autoplay {
+        position: absolute;
+        background-color: white;
+        color: black;
+        border: 1px solid black;
+        text-align: center;
+        font-weight: bold;
+        width: 117px;
+        height: 24px;
+        padding: 2px;
+        margin-left: 232px;
+        margin-top: 400px;
+    }
+
+    .bid {
+        position: absolute;
+        background-color: yellow;
+        color: black;
+        border: 1px solid black;
+        text-align: center;
+        font-weight: bold;
+        width: 54px;
+        height: 16px;
+        padding: 2px;
+
+        &.north-bid {
+            margin-top: 90px;
+            margin-left: 145px;
+        }
+        &.west-bid {
+            margin-top: 320px;
+            margin-left: 10px;
+        }
+        &.south-bid {
+            margin-top: 410px;
+            margin-left: 10px;
+        }
+        &.east-bid {
+            margin-top: 320px;
+            margin-left: 285px;
+        }
+        
+    }
+
+    
+}

@@ -1,0 +1,131 @@
+<div *ngIf="players[0].terminal.prompts.ack_hand" class="ack_hand">
+    <button [disabled]="api.loading" (click)="ack_hand()"> Next Hand... </button>
+</div>
+
+<div *ngIf="players[0].terminal.prompts.ack_game" class="ack_game">
+    Game over!
+    <button [disabled]="api.loading" (click)="ack_game()"> Finish </button>
+</div>
+
+<div *ngIf="3 as player" class="north">
+    <div *ngIf="!tableService" class="buttons">
+        <button *ngIf="players[player-1].type==='VacantTerminal'" (click)="inviteRobot(players[player-1])"> robot
+        </button>
+        <button *ngIf="players[player-1].type==='VacantTerminal'" (click)="inviteOnline(players[player-1])"> online
+        </button>
+        <button *ngIf="players[player-1].type!=='VacantTerminal'" (click)="boot(players[player-1])"> boot </button>
+        <button (click)="boot(players[player-1])"> sit </button>
+        <button (click)="Perspective=player-1"> observe </button>
+    </div>
+    <span class="name">{{ players[player-1].name }}</span>
+</div>
+
+<div *ngIf="2 as player" class="west">
+    <div *ngIf="!tableService" class="buttons">
+        <button *ngIf="players[player-1].type==='VacantTerminal'" (click)="inviteRobot(players[player-1])"> robot
+        </button>
+        <button *ngIf="players[player-1].type==='VacantTerminal'" (click)="inviteOnline(players[player-1])"> online
+        </button>
+        <button *ngIf="players[player-1].type!=='VacantTerminal'" (click)="boot(players[player-1])"> boot </button>
+        <button (click)="boot(players[player-1])"> sit </button>
+        <button (click)="Perspective=player-1"> observe </button>
+    </div>
+    <span class="name">{{ players[1].name }}</span>
+</div>
+
+<div *ngIf="4 as player" class="east">
+    <div *ngIf="!tableService" class="buttons">
+        <button *ngIf="players[player-1].type==='VacantTerminal'" (click)="inviteRobot(players[player-1])"> robot
+        </button>
+        <button *ngIf="players[player-1].type==='VacantTerminal'" (click)="inviteOnline(players[player-1])"> online
+        </button>
+        <button *ngIf="players[player-1].type!=='VacantTerminal'" (click)="boot(players[player-1])"> boot </button>
+        <button (click)="boot(players[player-1])"> sit </button>
+        <button (click)="Perspective=player-1"> observe </button>
+    </div>
+    <span class="name">{{ players[3].name }}</span>
+</div>
+
+<div class="score our-score">
+    <span class="amount"> {{ players[0].totalScore }} / {{ players[0].bags }} </span>
+    <span class="completed" [style.width.px]="scoreWidth(players[0].totalScore)"> &nbsp; </span>
+</div>
+
+<div class="score their-score">
+    <span class="amount"> {{ players[1].totalScore }} / {{ players[1].bags }} </span>
+    <span class="completed" [style.width.px]="scoreWidth(players[1].totalScore)"> &nbsp; </span>
+</div>
+
+<div *ngIf="terminal.prompts.bid && game.currentPlayer==players[0] && game.bidding && { books: game.currentPlayer.estimatedBooks } as vars"
+    id="your-bid">
+    <div *ngIf="{ clashed: vars.books + game.teams[0].bid + game.teams[1].bid - 13 } as vars2">
+
+        <div [style.margin-left.px]="0" class="dot" (click)="vars.books=0" [attr.data-value]="">
+            <div style="position:absolute; margin-top:-20px" class="label"> Nil </div>
+        </div>
+
+        <div *ngFor="let card of game.currentPlayer.cards; let index=index" [style.margin-left.px]="38 + index*21.5"
+            class="dot" (click)="vars.books=index+1" [class.claimed]="vars.books >= (index+1)"
+            [class.clashed]="vars2.clashed>0 && index >= vars.books - vars2.clashed && index < vars.books"
+            [attr.data-value]="game.bid_as_string2[index]">
+            <div style="position:absolute; margin-top:-20px" class="label">{{index+1}}</div>
+        </div>
+
+        <p style="text-align:center; border: 1px solid black; width: 133px; font-weight: bold; position: absolute; margin-left: 38px; margin-top: 60px; color:green"
+            id="our-bid"> {{ vars.books }} + {{ players[2].bid ?? '?' }}</p>
+        <p style="text-align:center; border: 1px solid black; width: 133px; font-weight: bold; position: absolute; margin-left: 175px; margin-top: 60px; color:red"
+            id="their-bid"> {{ players[1].bid ?? '?' }} + {{ players[3].bid ?? '?' }} </p>
+
+        <button [disabled]="api.loading"
+            style="position: absolute; margin-top: 100px; margin-left: 110px; width: 120px; height: 40px; text-align: center;"
+            (click)="bid(vars.books)">
+            Make Bid
+        </button>
+    </div>
+</div>
+
+<!-- Each player's card played-->
+<app-card *ngIf="players[2].cardPlayed as card" [card]="card" name="north"> </app-card>
+<app-card *ngIf="players[0].cardPlayed as card" [card]="card" name="south"> </app-card>
+<app-card *ngIf="players[1].cardPlayed as card" [card]="card" name="west"> </app-card>
+<app-card *ngIf="players[3].cardPlayed as card" [card]="card" name="east"> </app-card>
+
+<div class="status-message"> <span>{{ status }}</span> </div>
+<div class="autoplay">
+    <input id="autoplay" type="checkbox" name="autoplay" [(ngModel)]="api.features.autoplay">
+    <label for="autoplay">autoplay</label>
+</div>
+
+<div *ngFor="let c of game.bid_as_string;let index = index" [attr.data-index]="index+1"
+    [style.margin-left.px]="8 + index*9.7" class="bid-dot" [attr.data-value]="c">
+    &nbsp;
+</div>
+
+<div *ngFor="let c of game.progress_as_string;let index = index" [attr.data-index]="index+1"
+    [style.margin-left.px]="8 + index*9.7" class="book-dot" [attr.data-value]="c">
+    &nbsp;
+</div>
+
+<!-- Each player's bid -->
+<div class="bid north-bid">
+    <ng-container *ngIf="!game.bidding"> {{ players[2].books.length }} / </ng-container>
+    {{ players[2].bid }}
+</div>
+<div class="bid west-bid">
+    <ng-container *ngIf="!game.bidding"> {{ players[1].books.length }} / </ng-container>
+    {{ players[1].bid }}
+</div>
+<div class="bid south-bid">
+    <ng-container *ngIf="!game.bidding"> {{ players[0].books.length }} / </ng-container>
+    {{ players[0].bid }}
+</div>
+<div class="bid east-bid">
+    <ng-container *ngIf="!game.bidding"> {{ players[3].books.length }} / </ng-container>
+    {{ players[3].bid }}
+</div>
+
+<!-- Each of the game perspectives cards -->
+<app-card (click)="onClick(card)" *ngFor="let card of players[0].cards; let index = index" [card]="card"
+    [name]="'card'+(index+1)"
+    [noclick]="(api.loading && 'loading') || (!terminal.prompts.card && 'not-prompted') || game.cantPlay(card)">
+</app-card>

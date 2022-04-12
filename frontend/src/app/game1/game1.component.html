@@ -1,0 +1,18 @@
+<div *ngIf="game" class="game-group">
+    <div>
+        <h2>player 1 : v0.2</h2>
+        <app-terminal [terminal]="game.players[0].terminal"></app-terminal>
+    </div>
+    <div>
+        <h2>player 1: v0.3</h2>
+        <app-spades [game]="game" [perspective]="0"></app-spades>
+    </div>
+    <div>
+        <h2>player 3: v0.5</h2>
+        <app-spades [game]="game" [perspective]="2"></app-spades>
+    </div>
+    <div>
+        <h2>player 2: v0.4</h2>
+        <app-spades *ngIf="mirrorGame as game" [game]="game" [perspective]="0"></app-spades>
+    </div>
+</div>

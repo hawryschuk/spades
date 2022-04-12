@@ -1,0 +1,59 @@
+.card {
+    position: absolute;
+    margin-left: 37px;
+    margin-top: 432px;
+    width: 52px;
+    height: 66px;
+    border: 1px solid purple;
+    background-color: white;
+    &[data-can-play=false]{ background-color: #ccc;}
+    &[data-suit="diamonds"],&[data-suit="hearts"]{ color: red; }
+    &[data-suit="clubs"],&[data-suit="spades"]{ color: black; }
+    
+    // display: none;
+
+    &.north { margin-top: 120px; margin-left: 148px; z-index: 100; }
+    &.west { margin-top: 245px; margin-left: 90px; z-index: 100; }
+    &.south { margin-top: 330px; margin-left: 148px; z-index: 100; }
+    &.east { margin-top: 245px; margin-left: 208px; z-index: 100; }
+
+    &.card1 { margin-left: 38px; z-index: 101; }
+    &.card2 { margin-left: 80px; z-index: 102; }
+    &.card3 { margin-left: 121px; z-index: 103; }
+    
+    &.card4 { margin-left: 178px; z-index: 104; }
+    &.card5 { margin-left: 230px; z-index: 105; }
+    &.card6 { margin-left: 260px; z-index: 106; }
+
+    &.card7,&.card8,&.card9,&.card10,&.card11,&.card12,&.card13 { margin-top: 500px }
+
+        &.card7 { margin-left: 18px; z-index:107; }
+        &.card8 { margin-left: 58px; z-index:108; }
+        &.card9 { margin-left: 98px; z-index:109; }
+
+        &.card10 { margin-left: 158px; z-index:110; }
+        &.card11 { margin-left: 198px; z-index:111; }
+        &.card12 { margin-left: 238px; z-index:112; }
+        &.card13 { margin-left: 282px; z-index:113; }
+
+    
+    .value { display: block; }
+    &[data-value="12"] .value::before { content: "A"; }
+    &[data-value="11"] .value::before { content: "K"; }
+    &[data-value="10"] .value::before { content: "Q"; }
+    &[data-value="9"] .value::before { content: "J"; }
+    &[data-value="8"] .value::before { content: "10"; }
+    &[data-value="7"] .value::before { content: "9"; }
+    &[data-value="6"] .value::before { content: "8"; }
+    &[data-value="5"] .value::before { content: "7"; }
+    &[data-value="4"] .value::before { content: "6"; }
+    &[data-value="3"] .value::before { content: "5"; }
+    &[data-value="2"] .value::before { content: "4"; }
+    &[data-value="1"] .value::before { content: "3"; }
+    &[data-value="0"] .value::before { content: "2"; }
+    
+    &[data-suit=diamonds] .suit::before { content: "♦"; }
+    &[data-suit=clubs] .suit::before { content: "♣"; }
+    &[data-suit=spades] .suit::before { content: "♠"; }
+    &[data-suit=hearts] .suit::before { content: "♥"; }    
+}

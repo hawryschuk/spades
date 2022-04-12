@@ -1,0 +1,6 @@
+app-terminal { height: 575px; width: 500px; float: left; }
+app-spades { float: left; clear: right; }
+
+.game-group > * { float:left; border: 1px solid black; padding: 5px;  }
+.game-group { display: block; clear: both; }
+

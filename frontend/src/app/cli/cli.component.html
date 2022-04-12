@@ -1,0 +1,35 @@
+<div class="form">
+    <div>
+        <label>baseuri</label>
+
+        <input [(ngModel)]="api.features.baseuri">
+    </div>
+
+    <div *ngIf="api.features.baseuri">
+        <label>service</label>
+
+        <select [(ngModel)]="api.features.service">
+            <option *ngFor="let service of (services$|async)" [ngValue]="service" [innerHTML]="service"> </option>
+        </select>
+    </div>
+
+    <div *ngIf="api.features.service">
+        <label>service-instance</label>
+
+        <select [(ngModel)]="api.features.instance">
+            <option *ngFor="let instance of (instances$|async)" [ngValue]="instance" [innerHTML]="instance"> </option>
+        </select>
+    </div>
+
+    <div *ngIf="api.features.instance">
+        <label>instance-terminal </label>
+
+        <select [(ngModel)]="api.features.terminal">
+            <option *ngFor="let terminal of (terminals$|async)" [ngValue]="terminal.id" [innerHTML]="terminal.id">
+            </option>
+        </select>
+    </div>
+
+</div>
+
+<app-terminal *ngIf="api.terminal$|async as terminal" [terminal]="terminal"></app-terminal>
