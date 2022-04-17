@@ -1,49 +1,51 @@
-import { Book } from './Book';
+import { Terminal, TerminalActivity, BaseService } from '../../@hawryschuk-terminal-restapi';
+import { Table } from '../../@hawryschuk-terminal-restapi/Table';
 import { Util } from '@hawryschuk/common';
-import { DAO } from '@hawryschuk/dao';
+import { Book } from './Book';
 import { Suit } from "./Suit";
 import { Card } from "./Card";
 import { Player } from "./Player";
-import { Prompt, Terminal, TerminalActivity, TerminalRestApiClient, WebTerminal } from '../../@hawryschuk-terminal-restapi';
 
-export class Game {
-    id = new Date().getTime().toString();
+export class Game extends BaseService {
     players: Player[];
     currentPlayer: Player;
     perspective: number = 0;
-    books: Book[] = [new Book()];
+    books: Book[] = [new Book()]; // Card[]
     bids: { player: Player; books: number; }[] = [];
+    cards: Card[] = Object.values(Suit).reduce((cards, suit) => cards.concat(new Array(13).fill(0).map((_, index) => new Card(this, suit, index))), [] as Card[]);
+
     constructor({
-        terminals = [] as Terminal[],
-        history = [] as TerminalActivity[],
-        dao = new DAO({ Terminal })// Terminal : id, instance, service -- created, finished -- alive
-    } = {}) {
-        this.players = new Array(4).fill(0)
-            .map((_, index) => new Player(this, [], `Player ${index + 1}`))
-            .map((player, index) => Object.assign(player, { terminal: terminals[index] || player.terminal }))
+        id,
+        table = null as any,
+        terminals = [],
+        history = [],
+    } = {} as {
+        id?: string;
+        table?: Table;
+        terminals?: Terminal[];
+        history?: TerminalActivity[];
+    }) {
+        super({ id, table });
+        this.players = new Array(4).fill(0).map((_, index) => new Player({ game: this, cards: [], terminal: terminals[index], name: terminals[index]?.input?.name || `Robot ${index + 1}` }))
         this.currentPlayer = null as any;
         this.history = history;
         if (!history.length) this.deal();
     }
 
-    cards: Card[] = Object
-        .values(Suit)
-        .reduce((cards, suit) => cards
-            .concat(new Array(13).fill(0).map((_, index) =>
-                new Card(this, suit, index))), [] as Card[]);
+    set Terminals(terminals: Terminal[]) {
+        terminals.forEach((t, i) => {
+            // if ([VacantTerminal, RobotTerminal].every(k => !(t instanceof k))) {
+            if (t) {
+                this.players[i].terminal = t;
+                this.players[i].name = t.input.name;
+            }
+        });
+    }
 
-    set terminals(terminals: Terminal[]) { this.players.forEach((p, i) => p.terminal = terminals[i]) }
-
-    get terminals() { return this.players.map(t => t.terminal) }
-
-    /** @example getCard('8 of Spades')
-     * @example getCard('Spades','8')
-     * @example getCard('Spades',6)         getCard(Suit.Spades, )
-     */
-    getCard(suit: Suit, value?: number | string): Card {
-        const card = this.cards.find(c => c.toString() === suit); if (card) return card;
-        if (typeof value === 'string') value = Card.Values.indexOf(value);
-        return Util.findWhere(this.cards, { suit, value }) as any;
+    async broadcast(message: any) {
+        await Promise.all(this.players.map(async player => {
+            await player.terminal.send(message);
+        }))
     }
 
     /** Generate a game state from an audit-log */
@@ -51,8 +53,8 @@ export class Game {
     set history(lines: TerminalActivity[]) {
         lines ||= [];
         this.reset();
-        const terminals = this.players.map(p => p.terminal);
-        this.players.forEach(p => (p.cards = []) && (p.terminal = new Terminal));
+        // const terminals = this.players.map(p => p.terminal);
+        // this.players.forEach(p => (p.cards = []) && (p.terminal = new Terminal));
 
         for (const line of lines) {
             const { type, message = '', options } = line;
@@ -112,18 +114,10 @@ export class Game {
             }
         }
 
-        this.players.forEach((p, i) => p.terminal = terminals[i])
-        this.myPlayer.terminal.history = lines;
+        // this.players.forEach((p, i) => p.terminal = terminals[i])
+        // this.myPlayer.terminal.history = lines;
         console.groupEnd();
     }
-
-    reset() {
-        this.players.forEach(p => Object.assign(p, { score: 0, bags: 0 }))
-        this.currentPlayer = Util.shuffle([...this.players])[0];
-        this.deal();
-        return this;
-    }
-
 
     set names(names: string[]) { this.players.forEach((player, index) => player.name = names[index] || `Player ${index + 1}`) }
 
@@ -137,7 +131,7 @@ export class Game {
 
     get winner() { return this.players.slice(0, 2).sort((a, b) => a.score - b.score).slice(-1)[0]; }
 
-    get finished() { return this.winner.totalScore >= 500 }
+    get finished() { return (this.winner.totalScore >= 1) && !this.players.every(({ totalScore }) => totalScore !== this.players[0].totalScore) }
 
     get teams() { return [this.myPlayer, this.myPlayer.nextPlayer].map(p => p.team) }
 
@@ -147,84 +141,12 @@ export class Game {
 
     get bidding() { return this.bids.length < 4 }
 
-    get status() {
-        return this.bidding && (this.isItMyTurn ? 'Make your bid' : `${this.currentPlayer.name} bids`)
-            || (this.isItMyTurn ? 'Your turn' : `${this.currentPlayer.name}'s turn`)
-            || ''
-    }
-
-    deal() {
-        const cards: Card[] = Util.shuffle(this.cards);
-        this.players.forEach((player, index) => {
-            player.cards = this.finished
-                ? []
-                : cards.slice(index * 13, (index + 1) * 13).sort((a, b) => {
-                    const val = (card: Card) => (Object.values(Suit).indexOf(card.suit) * 100) + card.value;
-                    const canplay = this.canPlay(a) !== this.canPlay(b) ? (this.canPlay(b) ? 1 : -1) : 0;
-                    return canplay || -(val(a) - val(b));
-                });
-            for (const card of player.cards)
-                Object.assign(card, { player });
-        });
-        this.books = [new Book];
-        this.bids = [];
-        return this;
-    }
-
-    bid(amount: number) {
-        this.bids.push({ player: this.currentPlayer, books: amount });
-        this.currentPlayer = this.currentPlayer.nextPlayer;
-    }
-
-    canPlay(card: Card | string) {
-        if (typeof card === 'string') card = this.cards.find(c => c.toString() === card) as any;
-        return !this.cantPlay(card as Card);
-    }
-
-    cantPlay(card: Card) {
-        const fails = Object
-            .entries({
-                paused: this.paused,
-                wrongsuit: this.book.suit && this.currentPlayer.hasSuit(this.book.suit) && card.suit !== this.book.suit,
-                notmycard: !this.currentPlayer?.cards.includes(card),
-                bidding: this.bidding,
-                spadelead: card.suit === Suit.SPADES && this.book.cards.length === 0 && !this.spadesBroken && this.currentPlayer?.hasNonSpades,
-            })
-            .filter(([key, value]) => !!value)
-            .map(([key, value]) => key)
-            .join(' ');
-        return fails;
-    }
+    get status() { return this.bidding && (this.isItMyTurn ? 'Make your bid' : `${this.currentPlayer.name} bids`) || (this.isItMyTurn ? 'Your turn' : `${this.currentPlayer.name}'s turn`) || '' }
 
     get playersInPerspective() {
         const arr = [...this.players, ...this.players].slice(this.perspective % this.players.length, this.perspective + this.players.length);
         if (arr.length !== 4) debugger;
         return arr;
-    }
-
-    play(card: Card) {
-        if (!this.canPlay(card)) throw new Error(this.cantPlay(card));
-        Util.removeElements(this.currentPlayer.cards, card);
-        this.book.cards.push(card);
-        this.currentPlayer = this.currentPlayer.nextPlayer;
-        if (this.book.complete) {
-            if (this.handComplete) {
-                for (const { team } of this.players.slice(0, 2)) {
-                    team.markScore();
-                }
-                if (!this.finished)
-                    this.deal();
-            } else {
-                this.currentPlayer = this.book.winner;
-                this.books.push(new Book);
-            }
-        }
-    }
-
-    static str = (count = 0, char = ' ') => {
-        const str = Util.safely(() => new Array(count).fill(char).join(''));
-        if (str === undefined) debugger;
-        return str;
     }
 
     get ourteam() { return this.myPlayer.team }
@@ -263,210 +185,192 @@ export class Game {
         ].join('').split('');
     }
 
-    //#region asynchronous interactivity
-    paused: boolean = false;
-    speed = 20;
-    async pause(ms: number) {
-        this.paused = true;
-        await Util.pause((ms || 1) / this.speed);
-        this.paused = false;
+    reset() {
+        this.players.forEach(p => Object.assign(p, { score: 0, bags: 0 }))
+        this.currentPlayer = Util.shuffle([...this.players])[0];
+        this.deal();
+        return this;
     }
 
-    async broadcast(message: any) {
-        console.log('BROADCAST: ', message, 'p1-', TerminalRestApiClient.httpClient, this.players[1]);
-        await Promise.all(this.players.map((p, i) => {
-            console.log(`begin ${i}`);
-            return p
-                .terminal.send(message)
-                .then(() => console.log(`done ${i}`));
-        }));
-        console.log('/BROADCAST')
-    }
-
-    async promptAllPlayers(options: Prompt) {
-        return Promise.all(this.players.map(p => p.terminal.prompt(options)))
-    }
-
-    // 1) STDOUT: Welcome 2) PROMPT{CHOICES:[offline,online]} 3) HAS-EXISTING? 4.1) YES: PROMPT{JOIN-EXISTING,CREATE-NEW} 4.2) NO: CREATE-NEW 5) PLAY GAME 6) GOTO 1
-    static async run({
-        terminal,
-        names = ['alex', 'clinton', 'liujing', 'alana'],
-        baseuri,
-        wsuri,
-    } = {} as { terminal: Terminal; wsuri: string; baseuri: string; names?: string[] }) {
-        terminal.send('Welcome');
-        const gameType = await terminal.prompt({
-            type: 'select',
-            name: 'game-type',
-            message: 'choose',
-            initial: 'online',
-            choices: ['offline', 'online'].map(c => ({ title: c, value: c })) as { title: string; value: string }[]
-        });
-        if (gameType === 'offline') {
-            await Game.play({ names, terminals: [terminal] });
-        } else if (gameType === 'online') {
-            const name = names[0] || await terminal.prompt({ type: 'text', message: 'what is your name?', name: 'name' });
-            const freeTerminal = Util.findWhere(await TerminalRestApiClient.freeTerminals, { service: 'Game' });
-            if (freeTerminal && (await terminal.prompt({
-                message: `There is an existing game (${freeTerminal.terminal}). What would you like to do?`,
-                type: 'select',
-                name: 'game-type',
-                initial: 'join-it',
-                choices: ['join-it', 'create-new-game'].map(c => ({ title: c, value: c }))
-            })) === 'join-it') {
-                const _terminal = await WebTerminal.retrieve({
-                    wsuri,
-                    baseuri,
-                    service: freeTerminal?.service,
-                    instance: freeTerminal.instance,
-                    id: freeTerminal.terminal,
+    deal() {
+        const cards: Card[] = Util.shuffle(this.cards);
+        this.players.forEach((player, index) => {
+            player.cards = this.finished
+                ? []
+                : cards.slice(index * 13, (index + 1) * 13).sort((a, b) => {
+                    const val = (card: Card) => (Object.values(Suit).indexOf(card.suit) * 100) + card.value;
+                    const canplay = this.canPlay(a) !== this.canPlay(b) ? (this.canPlay(b) ? 1 : -1) : 0;
+                    return canplay || -(val(a) - val(b));
                 });
-                await TerminalRestApiClient.getTerminalOwnership(_terminal.service, _terminal.instance, _terminal.id, { name });
-                for (const item of Util.where(_terminal.history, { type: 'stdout' })) await terminal.send(item.message);
-                const handler = async (last = _terminal.last) => {
-                    if (last.type === 'prompt' && last.options && !('resolved' in last.options)) {
-                        await _terminal.respond(await terminal.prompt(last.options));
-                    }
-                    else if (last.type === 'stdout') await terminal.send(last.message);
-                    else console.debug(last)
+            for (const card of player.cards)
+                Object.assign(card, { player });
+        });
+        this.books = [new Book];
+        this.bids = [];
+        return this;
+    }
+
+    bid(amount: number) {
+        this.bids.push({ player: this.currentPlayer, books: amount });
+        this.currentPlayer = this.currentPlayer.nextPlayer;
+        return this.bids[this.bids.length - 1];
+    }
+
+    /** @example getCard('8 of Spades'), getCard(Suit.Spades,8) */
+    getCard(suit: Suit, value?: number | string): Card {
+        const card = this.cards.find(c => c.toString() === suit); if (card) return card;
+        if (typeof value === 'string') value = Card.Values.indexOf(value);
+        return Util.findWhere(this.cards, { suit, value }) as any;
+    }
+
+    canPlay(card: Card | string) {
+        if (typeof card === 'string') card = this.cards.find(c => c.toString() === card) as any;
+        return !this.cantPlay(card as Card);
+    }
+
+    cantPlay(card: Card) {
+        const fails = Object
+            .entries({
+                paused: this.paused,
+                wrongsuit: this.book.suit && this.currentPlayer.hasSuit(this.book.suit) && card.suit !== this.book.suit,
+                notmycard: !this.currentPlayer?.cards.includes(card),
+                bidding: this.bidding,
+                spadelead: card.suit === Suit.SPADES && this.book.cards.length === 0 && !this.spadesBroken && this.currentPlayer?.hasNonSpades,
+            })
+            .filter(([key, value]) => !!value)
+            .map(([key, value]) => key)
+            .join(' ');
+        return fails;
+    }
+
+    play(card: Card) {
+        if (!this.canPlay(card)) { debugger; throw new Error(this.cantPlay(card)); }
+        Util.removeElements(this.currentPlayer.cards, card);
+        this.book.cards.push(card);
+        // console.log(`${this.currentPlayer.name} played ${card.toString()}`)
+        this.currentPlayer = this.currentPlayer.nextPlayer;
+        // console.log(`${this.currentPlayer.name} turn now`)
+        if (this.book.complete) {
+            if (this.handComplete) {
+                for (const { team } of this.players.slice(0, 2)) {
+                    team.markScore();
                 }
-                _terminal.subscribe({ handler });
-                if (_terminal.prompted) await handler();
-                await Util.waitUntil(() => _terminal.finished);              // allow the remote-game to interact with this game through the remote-terminal (which is shared)
-            } else { // create-new-game
-                // create-new-game for playing online -- initially 3 vacant seats -- invite robots and online-playhers
-                const terminals = [terminal];
-                for (let i = 2; i <= 4; i++) {
-                    console.log(`i = ${i}`)
-                    const playerType = await terminal.prompt({
-                        type: 'select',
-                        name: 'playerType',
-                        message: `Player ${i} type: `, // robot or online
-                        initial: i == 2 ? 'online' : 'robot',
-                        choices: [
-                            { title: 'robot', value: 'robot', },
-                            { title: 'online', value: 'online', },
-                        ]
-                    });
-                    const instance = Util.UUID;
-                    const service = 'Game';
-                    const terminalId = `${Util.UUID}-player${i}`;
-                    const playerTerminal: Terminal = playerType === 'online' && (await WebTerminal.createTerminal({ wsuri, baseuri, service, instance, terminal: terminalId }, null as any))
-                        || (null as any);
-                    playerTerminal && console.log(playerTerminal.id);
-                    terminals.push(playerTerminal);
-                }
-                await Game.play({ terminals });
-                Util.waitUntil(() => Game.instance).then(console.log)
+                if (!this.finished)
+                    this.deal();
+            } else {
+                this.currentPlayer = this.book.winner;
+                this.books.push(new Book);
             }
         }
     }
 
-    /** Play this game interactively using asynchronous input and output */
-    static instance: Game;
-    static async play({
-        names = ['alex', 'clinton', 'liujing', 'alana'] as string[],
-        terminals = [] as Terminal[],
-    }) {
-        const game = Game.instance = new Game();
-        terminals.forEach((t, i) => t && (game.players[i].terminal = t));
-        names.forEach((t, i) => game.players[i].name = t);
-        for (let i = 0; i < 4; i++)
-            game.players[i].name ||= (await game.players[i].terminal.prompt({
-                type: 'text',
-                name: 'name',
-                message: `What is your name?`,
-                initial: `Player ${i + 1}`,
-            }));
-
-        // Start and finish a game, and then confirm to repeat
-        do {
-            game.reset();
-
-            const displayScore = () => game.broadcast(`Score: ${game.myPlayer.totalScore} vs ${game.myPlayer.nextPlayer.totalScore} `);
-
-            while (!game.finished) {
-                if (game.bidding) {             // GET BIDS             WRITE(CARDS), READ(PLAYER BID), WRITE(BID)
-                    await game.currentPlayer.terminal.send(`${game.currentPlayer.name} (#${game.players.indexOf(game.currentPlayer) + 1}), here are your cards: ${Object
-                        .values(Suit)
-                        .map(suit => ({ suit, cards: game.currentPlayer.cardsOfSuit(suit) }))
-                        .filter(({ cards }) => cards.length)
-                        .map(({ suit, cards }) => `${suit}(${(cards).map((card: Card) => card.Value).join(', ')})`)
-                        .join(', ')
-                        }`);
-                    console.log('prompting current player to bid...')
-                    game.bid(
-                        (await game.currentPlayer.terminal.prompt({
-                            message: `${game.currentPlayer.name}, how many books do you bid?`,
-                            type: 'number',
-                            name: 'bid',
-                            min: 0,
-                            max: 13,
-                            initial: game.currentPlayer.estimatedBooks
-                        }))
-                    );
-                    console.log('/prompting current player to bid...')
-
-                    {
-                        const { player, books } = game.bids.slice(-1)[0];
-                        await game.broadcast(`${player.name} (#${game.players.indexOf(player) + 1}) bids ${books}`);
-                        console.log('-- done broadcast')
-                        await game.pause(1000);
-                    }
-                    if (!game.bidding) await game.broadcast('Bid    : ' + game.bid_as_string)
-                }
-
-                else if (!game.bidding) {       // PLAY CARDS           WRITE(BID, ACTUAL), READ(CARD), WRITE(CARD), WRITE(BOOK_WINNER), WRITE(GAME_WINNER)
-                    const { book } = game;
-                    const choices = game
-                        .currentPlayer.cards
-                        .map((card, index) => ({
-                            title: card.toString(),
-                            value: card.toString(),
-                            disabled: !game.canPlay(card),
-                        }))
-                        .sort((a, b): number => {
-                            const cardA: Card = game.currentPlayer.cards.find(c => c.toString() === a.value) as any;
-                            const cardB: Card = game.currentPlayer.cards.find(c => c.toString() === b.value) as any;
-                            return -(
-                                game.canPlay(cardA) === game.canPlay(cardB)
-                                    ? 0
-                                    : (game.canPlay(cardA) ? 1 : -1)
-                            ) || - (cardA.greaterThan(cardB) ? 1 : -1)
-                        });
-                    const options = {
-                        type: 'select',
-                        name: 'index',
-                        message: `${game.currentPlayer.name}, which card would you like to play?`,
-                        choices,
-                        initial: game.currentPlayer.chooseCardSimple.toString(),
-                    };
-                    console.log('GAME: prompting user for the card to play', options);
-                    const cardName = await game.currentPlayer.terminal.prompt(options);
-                    console.log('/GAME: prompting user for the card to play', options, cardName);
-                    const card: Card = game.currentPlayer.cards.find(c => c.toString() == cardName) as any;
-                    if (!card) { console.log({ CP: game.currentPlayer.name, cardName, GAMECard: game.getCard(cardName) }); debugger; }
-                    await game.broadcast(`${game.currentPlayer.name} plays the ${card.toString()}`);
-                    console.log('broadcast over');
-                    {
-                        Util.removeElements(game.currentPlayer.cards, card); game.book.cards.push(card); await game.pause(1000); game.currentPlayer.cards.push(card); game.book.cards.pop();
-                        game.play(card);
-                        await game.pause(1000);
-                    }
-                    if (book.complete) await game.broadcast(`${book.winner.name} wins the trick`);
-                    if (book !== game.book && game.books.length === 1) { await displayScore(); await game.pause(1000); }
-                    if (game.finished) await game.broadcast(`Game Over: You ${game.winner} `);
-                    console.log('next in loop')
-                }
-            }
-        } while (await game
-            .promptAllPlayers({
-                message: 'Would you like to play again?',
-                type: 'toggle',
-                name: 'playAgain'
-            })
-            .then(val => val.every(v => v.playAgain))
-        );
+    static str = (count = 0, char = ' ') => {
+        const str = Util.safely(() => new Array(count).fill(char).join(''));
+        if (str === undefined) debugger;
+        return str;
     }
 
+
+    /** Auto :: Performs the single step action in the service loop */
+    async auto(game = this): Promise<any> {
+        if (game.finished) {
+            throw new Error('Game Finished: Nothing to auto');
+        } else if (game.bidding) {
+            if (!game.currentPlayer.terminal) {
+                console.error(this.currentPlayer);
+                throw new Error('current player has no terminal ');
+            }
+            // console.log('AUTO1.2: ', { finished: game.finished, bidding: game.bidding, cpt: !!game.currentPlayer.terminal })
+            const message = `${game.currentPlayer.name} (#${game.players.indexOf(game.currentPlayer) + 1}), here are your cards: ${Object
+                .values(Suit)
+                .map(suit => ({ suit, cards: game.currentPlayer.cardsOfSuit(suit) }))
+                .filter(({ cards }) => cards.length)
+                .map(({ suit, cards }) => `${suit}(${(cards).map((card: Card) => card.Value).join(', ')})`)
+                .join(', ')
+                }`;
+
+            // console.log('AUTO1.3', { message, s: game.currentPlayer?.terminal });
+            await game.currentPlayer.terminal.send(message);
+
+            // console.log('AUTO2: ', { finished: game.finished, bidding: game.bidding, cp: !!game.currentPlayer, cpt: !!game.currentPlayer?.terminal, prompts: Object.keys(game.currentPlayer?.terminal?.prompts || {}) })
+            const { player, books } = game.bid(
+                (await game.currentPlayer.terminal.prompt({
+                    message: `${game.currentPlayer.name}, how many books do you bid?`,
+                    type: 'number',
+                    name: 'bid',
+                    min: 0,
+                    max: 13,
+                    initial: game.currentPlayer.estimatedBooks
+                }))
+            );
+            // console.log('AUTO3: ', { finished: game.finished, bidding: game.bidding })
+            await game.broadcast(`${player.name} (#${game.players.indexOf(player) + 1}) bids ${books}`);
+            // console.log('AUTO4: ', { finished: game.finished, bidding: game.bidding })
+            await game.pause(1000);
+            // console.log('AUTO5: ', { finished: game.finished, bidding: game.bidding })
+            if (!game.bidding) await game.broadcast('Bid    : ' + game.bid_as_string)
+            // console.log('AUTO6: ', { finished: game.finished, bidding: game.bidding })
+        } else if (!game.bidding) {            // PLAY CARDS           WRITE(BID, ACTUAL), READ(CARD), WRITE(CARD), WRITE(BOOK_WINNER), WRITE(GAME_WINNER)
+            const { book } = game;
+            const choices = game
+                .currentPlayer.cards
+                .map((card, index) => ({
+                    title: card.toString(),
+                    value: card.toString(),
+                    disabled: !game.canPlay(card),
+                }))
+                .sort((a, b): number => {
+                    const cardA: Card = game.currentPlayer.cards.find(c => c.toString() === a.value) as any;
+                    const cardB: Card = game.currentPlayer.cards.find(c => c.toString() === b.value) as any;
+                    return -(
+                        game.canPlay(cardA) === game.canPlay(cardB)
+                            ? 0
+                            : (game.canPlay(cardA) ? 1 : -1)
+                    ) || - (cardA.greaterThan(cardB) ? 1 : -1)
+                });
+            const options = {
+                type: 'select',
+                name: 'card',
+                message: `${game.currentPlayer.name}, which card would you like to play?`,
+                choices,
+                initial: game.currentPlayer.chooseCardSimple.toString(),
+            };
+
+            while (game.currentPlayer.terminal.prompts.card) {
+                console.error('wiping existing prompt for card');
+                await game.currentPlayer.terminal.answer({ card: null });
+            }
+
+            // while (!options.choices.find(c => !c.disabled && c.value === game.currentPlayer.terminal.input.card))
+            await game.currentPlayer.terminal.prompt(options);
+
+            const card: Card = game.currentPlayer.cards.find(c => c.toString() == game.currentPlayer.terminal.input.card) as any;
+
+            if (!card) {
+                await game.currentPlayer.terminal.send('error: invalid-card-played');
+                console.error('terminal sent invalid value: invalid-card-played'); // throw new Error(Util.safeStringify({ message: 'invalid-card-played', CP: game.currentPlayer.name, cardName, GAMECard: game.getCard(cardName) })) }
+            } else {
+                await game.broadcast(`${game.currentPlayer.name} plays the ${card && card.toString()}`);
+                game.play(card);
+                if (book.complete) await game.broadcast(`${book.winner.name} wins the trick`);
+                if (book !== game.book && game.books.length === 1) {    // the hand completed
+                    await game.broadcast(`Score: ${game.myPlayer.totalScore} vs ${game.myPlayer.nextPlayer.totalScore} `);
+                    await Promise.all(game.players.filter(p => !p.isRobot).map(p => p.terminal.prompt({ type: 'text', name: 'ack_hand', message: 'press ok to continue' })))
+                }
+                if (game.finished) {
+                    // console.log('/AUTO...')
+                    await game.broadcast(`${this.winner.team.players.map(p => p.name).join(' and ')} wins the game`);
+                    await Promise.all(game.players.filter(p => !p.isRobot).map(p => p.terminal.prompt({ type: 'text', name: 'ack_game', message: 'press ok to continue' })))
+                    const results = {    // will cause BaseService.run() to stop calling BaseService/Game.auto() -- will GC this, the serviceInstance
+                        winners: this.winner.team.players.filter(p => !p.isRobot).map(p => p.name),
+                        losers: this.winner.nextPlayer.team.players.filter(p => !p.isRobot).map(p => p.name),
+                    };
+                    return results.losers.length && results.winners.length
+                        ? results                           // 1+ winner, and 1+ loser
+                        : { winners: [], losers: [] }       // was a game against robots
+                }
+            }
+        }
+        // console.log('/AUTO')
+    }
 }

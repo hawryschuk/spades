@@ -3,6 +3,7 @@ import { TeamHand } from './TeamHand';
 import { Suit } from "./Suit";
 import { Card } from "./Card";
 import { Util } from '@hawryschuk/common';
+import { DAO } from '@hawryschuk/dao';
 import { TerminalActivity, Terminal, WebTerminal } from '../../@hawryschuk-terminal-restapi';
 
 export class VacantTerminal extends Terminal {
@@ -14,8 +15,10 @@ export class VacantTerminal extends Terminal {
 }
 
 export class RobotTerminal extends Terminal {
-    constructor(public player: Player) {
+    get player() { return (this as any)[Symbol.for('player')] }
+    constructor({ player } = {} as { player: Player }) {
         super();
+        (this as any)[Symbol.for('player')] = player;
         this.subscribe({
             handler: async (last = this.last) => {
                 if (last?.type === 'prompt' && !('resolved' in (last.options || {}))) {
@@ -40,21 +43,38 @@ export class RobotTerminal extends Terminal {
 
 const TerminalTypes = { Terminal, WebTerminal, RobotTerminal, VacantTerminal };
 
-export class Player {
-    constructor(
-        public game: Game,
-        public cards: Card[],
-        public name = 'Player'
-    ) { }
-    score = 0;
-    bags = 0;
-    terminal: Terminal = new RobotTerminal(this);
+// When the server restarts, the service is aborted, and a new service is generated reusing the same terminals from before
+// A) The new service resets                : The service doesn't have enough information from the WebTerminals to fully construct itself (and resume), so it doesnt
+// B) The new service resumes               : The service has enough information from the WebTerminal histories and does so
+// C) The new service resumes on consensus  : The service knows it can fairly resume the previous service by estimating the unknown data through fair random scenario selection
+const dao = new DAO({ RobotTerminal });
 
-    /** ng build will mangle names -- so we must preserve them some way */
-    get type() { return Object.keys(TerminalTypes).find(k => this.terminal.constructor.name == (TerminalTypes as any)[k].name); }
+export class Player {
+    name!: string;
+    game!: Game;
+    cards!: Card[];
+    terminal!: Terminal;
+    score!: number;
+    bags!: number;
+
+    constructor({
+        game, cards = [], name, terminal, score = 0, bags = 0
+    } = {} as {
+        name: string;
+        game: Game;
+        cards?: Card[];
+        terminal?: Terminal;
+        score?: number;
+        bags?: number;
+    }) {
+        Object.assign(this, { game, cards, name, terminal: terminal || new RobotTerminal({ player: this }), score, bags });
+    }
 
     hasSuit(suit: Suit) { return this.cards.filter(c => c.suit === suit).length; }
     cardsOfSuit(suit: Suit) { return this.cards.filter(c => c.suit === suit); }
+
+    get isRobot() { return this.terminal instanceof RobotTerminal }
+    get type() { return Object.keys(TerminalTypes).find(k => this.terminal.constructor.name == (TerminalTypes as any)[k].name); }
     get index() { return this.game.players.indexOf(this); }
     get nextPlayer() { return this.game.players[(this.index + 1) % 4]; }
     get partner() { return this.nextPlayer.nextPlayer; }

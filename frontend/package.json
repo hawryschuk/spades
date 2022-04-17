@@ -6,9 +6,9 @@
     "postinstall": "npm run hawryschuk",
     "hawryschuk": "npm link @hawryschuk/common @hawryschuk/dao",
     "prestart": "npm run hawryschuk",
-    "start": "ng serve",
+    "start": "ng serve --host=0.0.0.0 --poll=2000 --base-href=/staging/",
     "watch": "ng build --watch --configuration development",
-    "build": "ng build --base-href=/spades/",
+    "build": "ng build --base-href=/",
     "upload": "scp -r dist/frontend/* zirkamus@hawryschuk.com:/home2/zirkamus/public_html/www.hawryschuk.com/spades/",
     "test": "ng test"
   },
@@ -25,6 +25,8 @@
     "rxjs": "~6.6.0",
     "table": "^6.7.1",
     "tslib": "^2.1.0",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
     "webpack-node-externals": "^3.0.0",
     "zone.js": "~0.11.4"
   },
