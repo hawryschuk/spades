@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Util } from '@hawryschuk/common/util';
-import { BaseService } from '../../../../../@hawryschuk-terminal-restapi';
-import { Terminal } from '../../../../../@hawryschuk-terminal-restapi/Terminal';
-import { Game } from '../../../../business';
+import { BaseService } from '@hawryschuk/terminals';
+import { Terminal } from '@hawryschuk/terminals';
+import { Game } from '@hawryschuk/spades-business';
 
 @Component({
   selector: 'app-game1',

@@ -1,8 +1,8 @@
 // https://magisterrex.files.wordpress.com/2014/07/stocktickerrules.pdf
 
 import { Component, Input, OnInit } from '@angular/core';
-import { Terminal } from '../../../../../@hawryschuk-terminal-restapi';
-import { Game } from '../../../../../stock.ticker/business/game';
+import { Terminal } from '@hawryschuk/terminals';
+import { Game } from '@hawryschuk/stock-ticker/business/game';
 import { ApiService } from '../api.service';
 
 @Component({

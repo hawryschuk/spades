@@ -3,11 +3,17 @@ import { Observable, of, interval, combineLatest, BehaviorSubject } from 'rxjs';
 import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ApiService } from '../api.service';
 import { Model } from '@hawryschuk/dao';
-import { Table, WebTerminal } from '../../../../../@hawryschuk-terminal-restapi';
-import { TableService } from '../../../../../@hawryschuk-terminal-restapi/TableService';
-import { Game } from '../../../../business/Game';
+import { Table, WebTerminal } from '@hawryschuk/terminals';
+import { TableService } from '@hawryschuk/terminals';
+
+import { Game as SpadesGame } from '@hawryschuk/spades-business';
+import { VacantTerminal } from '@hawryschuk/spades-business';
+
+// import { Game as StockTickerGame } from '@hawryschuk/stock-ticker/business/game';
+// import { Game as TelefunkenGame } from '@hawryschuk/telefunken-business';
+
 import { Game as StockTickerGame } from '../../../../../stock.ticker/business/game';
-import { VacantTerminal } from '../../../../business/Player';
+import { Game as TelefunkenGame } from '../../../../../Telefunken/business/Game';
 
 @Component({
   selector: 'app-table-service',
@@ -89,7 +95,7 @@ export class TableServiceComponent implements OnInit {
 
   tableService$: Observable<TableService> = this.api.terminal$.pipe(switchMap(terminal => (((terminal as any)?.updated$ || of(null)) as Observable<any>).pipe(map(() =>
     <any>(terminal && new TableService(terminal))
-  ))));
+  )))).pipe(tap(ts => { (window as any).ts = ts; }));
 
   canReady$ = this.api.terminal$.pipe(switchMap(terminal => ((terminal as any)?.updated$ || of(null)).pipe(map(() =>
     terminal && terminal.promptedFor({ name: 'action', value: 'ready' })
@@ -127,16 +133,27 @@ export class TableServiceComponent implements OnInit {
       const table: { seats: number; members: {}[]; ready: boolean; empty: boolean; } = tables[parseInt(terminal.input.table || '0') - 1];
       const playing = table?.ready && [finished, ready, standup].every(i => started > i) // && (bidprompt > started || bids > started);
       const terminals = new Array(table?.seats || 0).fill(0).map((_, i) => (i + 1) === terminal.input.seat ? terminal : new VacantTerminal());
+      if (!Object.values({ TelefunkenGame, SpadesGame, StockTickerGame }).every(Boolean)) {
+        const x = { TelefunkenGame, SpadesGame, StockTickerGame };
+        console.log({ x })
+        debugger;
+      }
       const game = playing && (
-        terminal.input.service === 'spades' && new Game({ terminals, history: terminal.history.slice(started) })
+        terminal.input.service === 'spades' && new SpadesGame({ terminals, history: terminal.history.slice(0) })
         || terminal.input.service === 'stock ticker' && new StockTickerGame({ terminals })
+        || terminal.input.service === 'telefunken' && new TelefunkenGame({ terminals, history: terminal.history.slice(0) })
       );
       console.log({
-        started, finished, ready, standup,
+        started, finished, ready, standup, terminal,
         // bids, bidprompt,
-        tables, terminals: terminals.filter(t => !(t instanceof VacantTerminal)).length, table, playing, history: terminal.history.slice(started),
+        tables,
+        terminals: terminals.filter(t => !(t instanceof VacantTerminal)).length,
+        table,
+        playing,
+        historyLength: terminal.history.length,
+        history: terminal.history.slice(started),
         game
-      })
+      });
       return game;
     } else {
       return null;
@@ -163,7 +180,10 @@ export class TableServiceComponent implements OnInit {
     .pipe(map(([
       terminal, loungeChat, seat, canReady, service, table, tables, game, tableService, seatNumbers
     ]) => ({
-      terminal, loungeChat, seat, canReady, service, table, tables, game, tableService, seatNumbers
+      terminal, loungeChat, seat, canReady, service, table, tables, game, tableService, seatNumbers,
+
+      historyLength: terminal?.history?.length,
+      history: terminal?.history,
     })))
     .pipe(catchError(async e => {
       console.error(e);

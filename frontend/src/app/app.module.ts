@@ -18,6 +18,7 @@ import { ApiService } from './api.service';
 import { LocationStrategy, HashLocationStrategy } from '@angular/common';
 import { TableServiceComponent } from './table-service/table-service.component';
 import { StockTickerComponent } from './stock-ticker/stock-ticker.component';
+import { TelefunkenComponent } from './telefunken/telefunken.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { StockTickerComponent } from './stock-ticker/stock-ticker.component';
     Game3Component,
     Application1Component,
     TableServiceComponent,
-    StockTickerComponent
+    StockTickerComponent,
+    TelefunkenComponent
   ],
   imports: [
     BrowserModule,

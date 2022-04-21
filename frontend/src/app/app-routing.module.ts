@@ -4,11 +4,16 @@ import { Component } from '@angular/core';
 
 import { CliComponent } from './cli/cli.component';
 import { TableServiceComponent } from './table-service/table-service.component';
+import { TelefunkenComponent } from './telefunken/telefunken.component';
 
 @Component({ selector: 'empty-component', template: '', })
 export class EmptyComponent { }
 
 export const routes: Routes = [
+
+  {
+    path: 'telefunken', component: TelefunkenComponent,    
+  },
 
   {
     path: 'cli', component: CliComponent,

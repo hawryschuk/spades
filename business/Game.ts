@@ -1,5 +1,4 @@
-import { Terminal, TerminalActivity, BaseService } from '../../@hawryschuk-terminal-restapi';
-import { Table } from '../../@hawryschuk-terminal-restapi/Table';
+import { Terminal, TerminalActivity, BaseService, Table } from '@hawryschuk/terminals';
 import { Util } from '@hawryschuk/common';
 import { Book } from './Book';
 import { Suit } from "./Suit";
@@ -26,7 +25,12 @@ export class Game extends BaseService {
         history?: TerminalActivity[];
     }) {
         super({ id, table });
-        this.players = new Array(4).fill(0).map((_, index) => new Player({ game: this, cards: [], terminal: terminals[index], name: terminals[index]?.input?.name || `Robot ${index + 1}` }))
+        this.players = new Array(4).fill(0).map((_, index) => new Player({
+            game: this,
+            cards: [],
+            terminal: terminals[index],
+            name: terminals[index]?.input?.name || `Robot ${index + 1}`
+        }))
         this.currentPlayer = null as any;
         this.history = history;
         if (!history.length) this.deal();
@@ -53,9 +57,6 @@ export class Game extends BaseService {
     set history(lines: TerminalActivity[]) {
         lines ||= [];
         this.reset();
-        // const terminals = this.players.map(p => p.terminal);
-        // this.players.forEach(p => (p.cards = []) && (p.terminal = new Terminal));
-
         for (const line of lines) {
             const { type, message = '', options } = line;
             const index = lines.indexOf(line);
@@ -113,10 +114,6 @@ export class Game extends BaseService {
                 }
             }
         }
-
-        // this.players.forEach((p, i) => p.terminal = terminals[i])
-        // this.myPlayer.terminal.history = lines;
-        console.groupEnd();
     }
 
     set names(names: string[]) { this.players.forEach((player, index) => player.name = names[index] || `Player ${index + 1}`) }

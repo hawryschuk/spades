@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Util } from '@hawryschuk/common';
-import { Terminal, WebTerminal } from '../../../../../@hawryschuk-terminal-restapi';
+import { Terminal, WebTerminal } from '@hawryschuk/terminals';
 import { Game } from '../../../../business';
 
 @Component({

@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { Util } from '@hawryschuk/common';
 import { BehaviorSubject } from 'rxjs';
-import { Terminal } from '../../../../../@hawryschuk-terminal-restapi/Terminal';
+import { Terminal } from '@hawryschuk/terminals';
 @Component({
   selector: 'app-terminal',
   templateUrl: './terminal.component.html',

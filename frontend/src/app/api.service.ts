@@ -1,13 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectorRef, Injectable } from '@angular/core';
 import { catchError, combineAll, debounceTime, delay, distinctUntilChanged, filter, last, map, mergeMap, mergeMapTo, publishReplay, reduce, refCount, retry, retryWhen, startWith, switchMap, take, tap } from 'rxjs/operators';
-import { TerminalRestApiClient } from '../../../../@hawryschuk-terminal-restapi/TerminalRestApiClient';
-import { MinimalHttpClient } from '../../../../@hawryschuk-terminal-restapi/MinimalHttpClient';
 import { BehaviorSubject, combineLatest, from, interval, merge, Observable, of } from 'rxjs';
-import { WebTerminal } from '../../../../@hawryschuk-terminal-restapi';
+import { TerminalRestApiClient, MinimalHttpClient, WebTerminal } from '@hawryschuk/terminals';
 import { Util } from '@hawryschuk/common';
-import nacl from 'tweetnacl';
-import naclUtil from 'tweetnacl-util';
 
 @Injectable({
   providedIn: 'root'
@@ -75,71 +71,6 @@ export class ApiService {
 
     autoplay = false;
   })(this);
-
-  async test() {
-    const david = nacl.box.keyPair();
-    const viktoria = nacl.box.keyPair();
-
-    const davidEncrypting = () => {
-      //David computes a one time shared key
-      const david_shared_key = nacl.box.before(viktoria.publicKey, david.secretKey);
-
-      //David also computes a one time code.
-      const one_time_code = nacl.randomBytes(24);
-
-      //Davids message
-      const plain_text = "Hey!!, our communication is now more secure";
-
-      //Getting the cipher text
-      const cipher_text = nacl.box.after(
-        naclUtil.decodeUTF8(plain_text),
-        one_time_code,
-        david_shared_key
-      );
-
-      //message to be transited.
-      const message_in_transit = { cipher_text, one_time_code };
-
-      return message_in_transit;
-    };
-
-    const viktoriaDecrypting = (message) => {
-      //Getting Viktoria's shared key
-      const viktoria_shared_key = nacl.box.before(david.publicKey, viktoria.secretKey);
-
-      //Get the decoded message
-      let decoded_message = nacl.box.open.after(message.cipher_text, message.one_time_code, viktoria_shared_key);
-
-      //Get the human readable message
-      let plain_text = naclUtil.encodeUTF8(decoded_message)
-
-      //return the message
-      return plain_text;
-    };
-
-    const encrypted1 = davidEncrypting();
-
-    debugger;
-
-    let serialize: any = enc => btoa(String.fromCharCode.apply(null, enc));
-    serialize = enc => Array.from(enc);
-    let encrypted2 = {
-      cipher_text: serialize(encrypted1.cipher_text),
-      one_time_code: serialize(encrypted1.one_time_code)
-    }
-    let deserialize = m => new Uint8Array(atob(serialize(m)).split("").map((char) => char.charCodeAt(0)));
-    deserialize = m => new Uint8Array(atob(serialize(m)).split("").map((char) => char.charCodeAt(0)));
-    let encrypted3 = {
-      cipher_text: deserialize(encrypted2.cipher_text),
-      one_time_code: deserialize(encrypted2.one_time_code)
-    }
-
-    const decrypted1 = viktoriaDecrypting(encrypted3);
-
-    debugger;
-
-
-  }
 
   get terminal() { return this.terminal$.pipe(take(1)).toPromise() }
 

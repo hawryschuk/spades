@@ -1,56 +1,63 @@
 import { Component, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { Game, Card, Player, RobotTerminal, VacantTerminal } from '../../../../business';
-import { Terminal, TerminalRestApiClient, WebTerminal } from '@hawryschuk/terminals';
+import { Game, Card, Player, RobotTerminal, VacantTerminal, Meld } from '../../../../../Telefunken/business';
+import { Terminal, TerminalActivity, TerminalRestApiClient, WebTerminal } from '@hawryschuk/terminals';
 import { Util } from '@hawryschuk/common';
 import { ApiService } from '../api.service';
-import { BehaviorSubject, interval, Subject } from 'rxjs';
-import { reduce, takeUntil, takeWhile } from 'rxjs/operators';
+import { BehaviorSubject, interval, of, Subject } from 'rxjs';
+import { concatMap, debounce, debounceTime, delay, filter, map, reduce, takeUntil, takeWhile } from 'rxjs/operators';
+import { BaseComponent } from '../spades/spades.component';
 
-@Component({ selector: 'app-base-component', template: '', styles: [''] })
-export class BaseComponent implements OnDestroy {
-  readonly destroyed$ = new Subject();
-  ngOnDestroy() { this.destroyed$.complete() }
-}
 
 @Component({
-  selector: 'app-spades',
-  templateUrl: './spades.component.html',
-  styleUrls: ['./spades.component.scss']
+  selector: 'app-telefunken',
+  templateUrl: './telefunken.component.html',
+  styleUrls: ['./telefunken.component.scss']
 })
-export class SpadesComponent extends BaseComponent implements OnInit {
+export class TelefunkenComponent extends BaseComponent implements OnInit {
   constructor(public api: ApiService) {
     super();
   }
 
   @Input() baseuri = 'http://localhost:8001';
-  @Input() game: Game;
+  @Input() game: Game = new Game({ terminals: [new Terminal] });
   @Input() perspective = 0;
   @Input() tableService = false;
 
   Number = Number;
 
-  ngOnInit() {// autoplay
-    interval(200)
-      .pipe(takeUntil(this.destroyed$))
-      .pipe(reduce((acc) => {
-        let { last, time, responding } = acc;
-        const [activityItem] = this.terminal.promptedActivity.filter(i => 'initial' in i.options);
-        const age = new Date().getTime() - time;
-        if (activityItem !== last) {
-          last = activityItem;
-          time += age;
+  buy() {
+    this.terminal.prompts.buy && this.terminal.respond(true);
+  }
+  draw() {
+    this.terminal.prompts.buy && this.terminal.respond(false);
+  }
+
+  get cards() { return [...this.game.players[this.perspective].cards].sort((a, b) => a.value - b.value) }
+
+  activity$ = new BehaviorSubject('');
+  error$ = new BehaviorSubject('')
+  message$ = this.activity$.pipe(concatMap(message => of(message).pipe(delay(750))));
+
+  get melds() { return this.game.melds }
+
+  ngOnInit() {
+    this.game.run();
+    (window as any).game = this.game;
+    this.terminal.subscribe({
+      handler: (activity: TerminalActivity) => {
+        const message = activity.message || activity.options.message || JSON.stringify(activity);
+        if (/^error: /.test(message)) {
+          this.error$.next(message.replace(/^error: /, ''));
+        } else if (!(
+          /^Here are your cards/.test(message)
+          || activity.type === 'prompt' && 'resolved' in activity.options
+        )) {
+          this.activity$.next(message);
+          if (activity.type === 'stdout') this.error$.next('')
         }
-        if (age > 750 && this.api.features.autoplay && activityItem && !responding) {
-          console.log('auto responding!')
-          responding = true;
-          this
-            .terminal
-            .respond(activityItem.options.initial, undefined, this.terminal.history.indexOf(activityItem))
-            .then(() => acc.responding = false)
-        }
-        return Object.assign(acc, { last, time, responding });
-      }, { responding: false, last: null, time: new Date().getTime() }))
-      .subscribe();
+      }
+    });
+    this.terminal.subscribers[0].handler(this.terminal.history.slice(-1)[0])
   }
 
   scoreWidth(totalScore: number) {
@@ -79,14 +86,6 @@ export class SpadesComponent extends BaseComponent implements OnInit {
         title: 'ack_game',
         block: () => this.terminal.answer({ ack_game: new Date().getTime() }),
       })
-  }
-
-  async onClick(card: Card) {
-    if (this.terminal.prompts.card && !this.api.loading && this.game.canPlay(card))
-      await this.api.load({
-        block: () => this.terminal.answer({ card: card.toString() }),
-        title: 'play card'
-      });
   }
 
   async inviteOnline(player: Player) {
@@ -136,4 +135,27 @@ export class SpadesComponent extends BaseComponent implements OnInit {
       ? Object.assign(new Game(), this.game, { players: this.players }).status
       : this.game.status;
   }
+
+  meld() {
+    this.terminal.answer({ meld: [this.selected.map(card => this.game.players[0].cards.indexOf(card))] });
+    this.selected = [];
+  }
+
+  discard() {
+    this.terminal.answer({ meld: [[]], discard: this.selected[0].name });
+    this.selected = [];
+  }
+
+  selected = [];
+  isSelected(card: Card) {
+    return this.selected.includes(card) && 'selected'
+  }
+
+  async onClick(card: Card) {
+    this.selected.includes(card)
+      ? Util.removeElements(this.selected, card)
+      : this.selected.push(card)
+  }
+
+
 }

@@ -1,5 +1,4 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { Card } from '../../../../business/Card';
 
 @Component({
   selector: 'app-card',
@@ -12,7 +11,7 @@ export class CardComponent implements OnInit {
 
   ngOnInit(): void { }
   @Input() noclick!: string;
-  @Input() card!: Card;
+  @Input() card!: { suit: string; value: number; };
   @Input() name!: string;
-  
+
 }

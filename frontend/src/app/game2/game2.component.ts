@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Util } from '@hawryschuk/common';
-import { TerminalRestApiClient } from '../../../../../@hawryschuk-terminal-restapi';
-import { WebTerminal } from '../../../../../@hawryschuk-terminal-restapi/WebTerminal';
+import { WebTerminal, TerminalRestApiClient } from '@hawryschuk/terminals';
 import { Game } from '../../../../business';
 
 @Component({

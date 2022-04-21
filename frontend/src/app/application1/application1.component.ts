@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Util } from '@hawryschuk/common';
 import { interval } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { BaseService, Terminal, TerminalRestApiClient, WebTerminal } from '../../../../../@hawryschuk-terminal-restapi';
+import { BaseService, Terminal, TerminalRestApiClient, WebTerminal } from '@hawryschuk/terminals';
 import { Game, Player, RobotTerminal, VacantTerminal } from '../../../../business';
 import { ApiService } from '../api.service';
 

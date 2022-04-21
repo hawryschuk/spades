@@ -3,8 +3,8 @@ import { TeamHand } from './TeamHand';
 import { Suit } from "./Suit";
 import { Card } from "./Card";
 import { Util } from '@hawryschuk/common';
-import { DAO } from '@hawryschuk/dao';
 import { TerminalActivity, Terminal, WebTerminal } from '../../@hawryschuk-terminal-restapi';
+// import { TerminalActivity, Terminal, WebTerminal } from '@hawryschuk/terminals';     // Uncaught TypeError: Class extends value undefined is not a constructor or null
 
 export class VacantTerminal extends Terminal {
     constructor({
@@ -47,7 +47,6 @@ const TerminalTypes = { Terminal, WebTerminal, RobotTerminal, VacantTerminal };
 // A) The new service resets                : The service doesn't have enough information from the WebTerminals to fully construct itself (and resume), so it doesnt
 // B) The new service resumes               : The service has enough information from the WebTerminal histories and does so
 // C) The new service resumes on consensus  : The service knows it can fairly resume the previous service by estimating the unknown data through fair random scenario selection
-const dao = new DAO({ RobotTerminal });
 
 export class Player {
     name!: string;

@@ -3,7 +3,7 @@ import { Suit } from "./Suit";
 import { Card } from "./Card";
 import { Game } from "./Game";
 import { Book } from "./Book";
-import { Terminal } from "../../@hawryschuk-terminal-restapi/Terminal";
+import { Terminal } from "@hawryschuk/terminals";
 
 describe('Spades Game', () => {
     let game: Game;

@@ -1,18 +1,18 @@
 {
-  "name": "business",
+  "name": "@hawryschuk/spades-business",
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
   "bin": {
-    "hawryschuk": "./cli.ts"
+    "spades": "./cli.ts"
   },
   "scripts": {
-    "hawryschuk": "npm link @hawryschuk/common @hawryschuk/dao @hawryschuk/dao-aws",
+    "hawryschuk": "npm link @hawryschuk/common @hawryschuk/dao @hawryschuk/dao-aws @hawryschuk/terminals",
     "postinstall": "npm run hawryschuk",
     "test": "ts-mocha *.spec.ts",
     "posttest": "echo tsc --outDir dist",
     "start": "nodemon --ignore dist --exec npm test --ext ts",
-    "cli": "nodemon --exec npm run cli --ext ts"
+    "cli": "ts-node cli"
   },
   "author": "",
   "license": "ISC",

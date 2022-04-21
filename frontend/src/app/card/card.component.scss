@@ -12,6 +12,9 @@
     
     // display: none;
 
+    &.deck { margin-top: 220px; margin-left: 128px; z-index: 100; }
+    &.discard { margin-top: 220px; margin-left: 188px; z-index: 100; }
+
     &.north { margin-top: 120px; margin-left: 148px; z-index: 100; }
     &.west { margin-top: 245px; margin-left: 90px; z-index: 100; }
     &.south { margin-top: 330px; margin-left: 148px; z-index: 100; }
@@ -38,6 +41,7 @@
 
     
     .value { display: block; }
+    &[data-value="13"] .value::before { content: "🃏"; font-size: 200%; margin:-5px}
     &[data-value="12"] .value::before { content: "A"; }
     &[data-value="11"] .value::before { content: "K"; }
     &[data-value="10"] .value::before { content: "Q"; }

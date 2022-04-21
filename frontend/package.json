@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "postinstall": "npm run hawryschuk",
-    "hawryschuk": "npm link @hawryschuk/common @hawryschuk/dao",
+    "hawryschuk": "npm link @hawryschuk/common @hawryschuk/dao @hawryschuk/terminals @hawryschuk/spades-business @hawryschuk/telefunken-business @hawryschuk/stock-ticker",
     "prestart": "npm run hawryschuk",
     "start": "ng serve --host=0.0.0.0 --poll=2000 --base-href=/staging/",
     "watch": "ng build --watch --configuration development",

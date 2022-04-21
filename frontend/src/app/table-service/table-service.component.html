@@ -30,6 +30,9 @@
         [game]="vars.game">
     </app-stock-ticker>
 
+    <app-telefunken *ngIf="vars.game && vars.terminal?.input.service==='telefunken'" [game]="vars.game">
+    </app-telefunken>
+
     <div *ngIf="vars.terminal?.input.service" id="lounge">
 
         <fieldset id="lounge-members">
