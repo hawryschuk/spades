@@ -83,7 +83,7 @@ jobs:
       - name: Build HTML from Markdown
         run: |
           pandoc README.md --standalone --to html5 --filter pandoc-plantuml -o index.html
-          rm -rf dist && mkdir dist && cp -r CNAME *.html *.pdf *.jpg plantuml-images/ dist
+          rm -rf dist && mkdir dist && cp -r CNAME *.html plantuml-images/ dist
 
       - name: Copy sample ui app
         run: |
