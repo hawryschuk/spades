@@ -1,17 +1,9 @@
-<section class="top">
-  <h1> @hawryschuk/spades </h1>
-  <nav>
-    <!-- [queryParams]="{debug: true}" fragment="education" -->
-    <ng-container *ngFor="let route of routes">
-      <a *ngIf="route.path!='**' && (route.path!=='cli' || api.features.cli)" [routerLink]="[route.path]"> {{route.path}} </a>
-    </ng-container>
-  </nav>
-</section>
+<h1> Stock Ticker :: Sample </h1>
 
-<section class="middle">
-  <router-outlet></router-outlet>
-</section>
+<app-service-center [(terminals)]="terminals" [(terminal)]="terminal" [serviceCenter]="serviceCenter">
 
-<section class="bottom">
-  <footer> Copyright 2006-2021 (C) hawryschuk.com, @hawryschuk, hawryschuk.eth </footer>
-</section>
+  <app-spades *ngIf="client.Service?.name==='Spades' && client.Service?.Instance?.messages?.length" [terminal]="terminal"></app-spades>
+
+  <div class="joined-mid-session">Instance is running. Please wait until the instance ends...</div>
+
+</app-service-center>

@@ -7,11 +7,9 @@
     border: 1px solid purple;
     background-color: white;
     &[data-can-play=false]{ background-color: #ccc;}
-    &[data-suit="diamonds"],&[data-suit="hearts"]{ color: red; }
-    &[data-suit="clubs"],&[data-suit="spades"]{ color: black; }
+    &[data-suit="D"],&[data-suit="H"]{ color: red; }
+    &[data-suit="C"],&[data-suit="S"]{ color: black; }
     
-    // display: none;
-
     &.deck { margin-top: 220px; margin-left: 128px; z-index: 100; }
     &.discard { margin-top: 220px; margin-left: 188px; z-index: 100; }
 
@@ -41,23 +39,23 @@
 
     
     .value { display: block; }
-    &[data-value="13"] .value::before { content: "🃏"; font-size: 200%; margin:-5px}
-    &[data-value="12"] .value::before { content: "A"; }
-    &[data-value="11"] .value::before { content: "K"; }
-    &[data-value="10"] .value::before { content: "Q"; }
-    &[data-value="9"] .value::before { content: "J"; }
-    &[data-value="8"] .value::before { content: "10"; }
-    &[data-value="7"] .value::before { content: "9"; }
-    &[data-value="6"] .value::before { content: "8"; }
-    &[data-value="5"] .value::before { content: "7"; }
-    &[data-value="4"] .value::before { content: "6"; }
-    &[data-value="3"] .value::before { content: "5"; }
-    &[data-value="2"] .value::before { content: "4"; }
-    &[data-value="1"] .value::before { content: "3"; }
-    &[data-value="0"] .value::before { content: "2"; }
+    &[data-value="*"] .value::before { content: "🃏"; font-size: 200%; margin:-5px}
+    &[data-value="A"] .value::before { content: "A"; }
+    &[data-value="K"] .value::before { content: "K"; }
+    &[data-value="Q"] .value::before { content: "Q"; }
+    &[data-value="J"] .value::before { content: "J"; }
+    &[data-value="10"] .value::before { content: "10"; }
+    &[data-value="9"] .value::before { content: "9"; }
+    &[data-value="8"] .value::before { content: "8"; }
+    &[data-value="7"] .value::before { content: "7"; }
+    &[data-value="6"] .value::before { content: "6"; }
+    &[data-value="5"] .value::before { content: "5"; }
+    &[data-value="4"] .value::before { content: "4"; }
+    &[data-value="3"] .value::before { content: "3"; }
+    &[data-value="2"] .value::before { content: "2"; }
     
-    &[data-suit=diamonds] .suit::before { content: "♦"; }
-    &[data-suit=clubs] .suit::before { content: "♣"; }
-    &[data-suit=spades] .suit::before { content: "♠"; }
-    &[data-suit=hearts] .suit::before { content: "♥"; }    
+    &[data-suit="D"] .suit::before { content: "♦"; }
+    &[data-suit="C"] .suit::before { content: "♣"; }
+    &[data-suit="S"] .suit::before { content: "♠"; }
+    &[data-suit="H"] .suit::before { content: "♥"; }    
 }

@@ -1,12 +1,18 @@
-import { enableProdMode } from '@angular/core';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { Buffer } from 'buffer'; (globalThis as any).Buffer = Buffer;
 
-import { AppModule } from './app/app.module';
-import { environment } from './environments/environment';
+export const FakeProcess = (globalThis as any).process = {
+  env: {},
+  argv: [],
+  exit: (code = 0) => console.log(`Fake process exited with code ${code}`),
+  cwd: () => '/',
+  nextTick: (callback: Function) => setTimeout(callback, 0),
+  on: (...args: any[]) => { },
+};
 
-if (environment.production) {
-  enableProdMode();
-}
 
-platformBrowserDynamic().bootstrapModule(AppModule)
-  .catch(err => console.error(err));
+import { bootstrapApplication } from '@angular/platform-browser';
+import { appConfig } from './app/app.config';
+import { AppComponent } from './app/app.component';
+
+bootstrapApplication(AppComponent, appConfig)
+  .catch((err) => console.error(err));

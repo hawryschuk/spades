@@ -1,139 +1,114 @@
-import { Component, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { Game, Card, Player, RobotTerminal, VacantTerminal } from '../../../../business';
-import { Terminal, TerminalRestApiClient, WebTerminal } from '@hawryschuk/terminals';
-import { Util } from '@hawryschuk/common';
-import { ApiService } from '../api.service';
-import { BehaviorSubject, interval, Subject } from 'rxjs';
-import { reduce, takeUntil, takeWhile } from 'rxjs/operators';
+// https://magisterrex.files.wordpress.com/2014/07/stocktickerrules.pdf
 
-@Component({ selector: 'app-base-component', template: '', styles: [''] })
-export class BaseComponent implements OnDestroy {
-  readonly destroyed$ = new Subject();
-  ngOnDestroy() { this.destroyed$.complete() }
-}
+import { Component, computed, effect, input, Input, model, OnDestroy, OnInit, Signal, signal } from '@angular/core';
+import { Util } from '@hawryschuk-common/util';
+import { ServiceCenterClient, Terminal } from '@hawryschuk-terminal-restapi';
+import { GamePlay, SpadesGame } from '../../../../business/SpadesGame';
+import { FormsModule, NgForm } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { onTerminalUpdated } from '@hawryschuk-terminal-restapi/frontend/src/app/terminal/onTerminalUpdated';
+import { CardComponent } from '../card/card.component';
+
+
+const str = (count = 0, char = ' ') => {
+  const str = Util.safely(() => new Array(count).fill(char).join(''));
+  if (str === undefined) debugger;
+  return str;
+};
 
 @Component({
+  imports: [CommonModule, FormsModule, CardComponent],
   selector: 'app-spades',
   templateUrl: './spades.component.html',
-  styleUrls: ['./spades.component.scss']
+  styleUrls: ['./spades.component.scss'],
+  standalone: true,
 })
-export class SpadesComponent extends BaseComponent implements OnInit {
-  constructor(public api: ApiService) {
-    super();
+export class SpadesComponent {
+  SpadesGame = SpadesGame;
+  terminal = input.required<Terminal>();
+  private updated$ = signal(new Date);
+
+  get client() { return ServiceCenterClient.getInstance<GamePlay>(this.terminal()); }
+  get game() { return this.game$() }; private game$ = computed(() => {
+    const { users, messages } = this.updated$() && this.client.Service!.Instance!;
+    const game = new SpadesGame(users, messages, this.client.UserName);
+    return game;
+  });
+
+  get discardables() { return this.discardables$(); }; discardables$ = computed(() => {
+    const choices = this.updated$() ? this.terminal().prompts.discard?.[0].choices : undefined;
+    return choices ? choices.map(c => Util.findWhere(this.game.player.cards, c.value)!) : undefined;
+  });
+
+  get discardables2() {
+    const choices = this.terminal().prompts.discard?.[0].choices;
+    const d = choices ? choices.map(c => Util.findWhere(this.game.player.cards, c.value)!) : undefined;
+    debugger;
+    return d;
   }
 
-  @Input() baseuri = 'http://localhost:8001';
-  @Input() game: Game;
-  @Input() perspective = 0;
-  @Input() tableService = false;
-
-  Number = Number;
-
-  ngOnInit() {// autoplay
-    interval(200)
-      .pipe(takeUntil(this.destroyed$))
-      .pipe(reduce((acc) => {
-        let { last, time, responding } = acc;
-        const [activityItem] = this.terminal.promptedActivity.filter(i => 'initial' in i.options);
-        const age = new Date().getTime() - time;
-        if (activityItem !== last) {
-          last = activityItem;
-          time += age;
-        }
-        if (age > 750 && this.api.features.autoplay && activityItem && !responding) {
-          console.log('auto responding!')
-          responding = true;
-          this
-            .terminal
-            .respond(activityItem.options.initial, undefined, this.terminal.history.indexOf(activityItem))
-            .then(() => acc.responding = false)
-        }
-        return Object.assign(acc, { last, time, responding });
-      }, { responding: false, last: null, time: new Date().getTime() }))
-      .subscribe();
-  }
-
-  scoreWidth(totalScore: number) {
-    return Math.max(0, 122 * totalScore / 500)
-  }
-
-  async bid(amount: number) {
-    if (this.terminal.prompts.bid)
-      await this.api.load({
-        title: 'bid',
-        block: () => this.terminal.answer({ bid: amount }),
-      });
-  }
-
-  ack_hand() {
-    if (this.terminal.prompts.ack_hand && !this.api.loading)
-      this.api.load({
-        title: 'ack_hand',
-        block: () => this.terminal.answer({ ack_hand: new Date().getTime() }),
-      })
-  }
-
-  ack_game() {
-    if (this.terminal.prompts.ack_game && !this.api.loading)
-      this.api.load({
-        title: 'ack_game',
-        block: () => this.terminal.answer({ ack_game: new Date().getTime() }),
-      })
-  }
-
-  async onClick(card: Card) {
-    if (this.terminal.prompts.card && !this.api.loading && this.game.canPlay(card))
-      await this.api.load({
-        block: () => this.terminal.answer({ card: card.toString() }),
-        title: 'play card'
-      });
-  }
-
-  async inviteOnline(player: Player) {
-    if (player.terminal instanceof VacantTerminal) {
-      const terminal = await WebTerminal.createTerminal({
-        baseuri: this.baseuri,
-        service: 'Game',
-        instance: this.game.id,
-        terminal: Util.UUID,
-        history: player.terminal.history
-      });
-      player.terminal = terminal;
-      await player.terminal.notify();
+  get directions() { return this.directions$(); }; directions$ = computed(() => {
+    if (this.game) {
+      const index = this.game.players.indexOf(this.game.player);
+      return {
+        south: index,
+        west: (index + 1) % 4,
+        north: (index + 2) % 4,
+        east: (index + 3) % 4,
+      };
+    } else {
+      return undefined;
     }
+  });
+
+  get players() { return this.players$(); }; players$ = computed(() => {
+    if (this.game && this.directions) {
+      return {
+        south: this.game.players[this.directions.south],
+        west: this.game.players[this.directions.west],
+        north: this.game.players[this.directions.north],
+        east: this.game.players[this.directions.east],
+      };
+    } else
+      return undefined;
+  });
+
+  constructor() {
+    Object.assign(window, { spades: this });
+    onTerminalUpdated({ component: this, handler: () => { this.updated$.set(new Date); }, terminal: this.terminal });
   }
 
-  inviteRobot(player: Player) {
-    // for (const player of this.players.slice(1))
-    //   if (player.terminal instanceof VacantTerminal) {
-    //     player.terminal = Object.assign(new RobotTerminal(player), { history: player.terminal.history });
-    //     player.terminal.notify();
-    //   }
+  scoreWidth(totalScore: number) { return Math.max(0, 122 * totalScore / 500) }
+
+  books = 1;
+
+  get ourteam() { return this.game!.teams[0] }
+  get opponents() { return this.game!.teams[1] }
+  get overlap() { return Math.max(0, this.ourteam.bid + this.opponents.bid - 13) }
+  get bags() { return Math.max(0, 13 - this.ourteam.bid - this.opponents.bid); }
+  get unplayed() { return 13 - this.ourteam.books - this.opponents.books; }
+  get bid_as_string() {
+    return [
+      str(this.game!.teams[0].bid - this.overlap, 'G'),
+      str(this.overlap, 'X'),
+      str(this.bags, '_'),
+      str(this.opponents.bid - this.overlap, 'R'),
+    ].join('').split('')
+  }
+  get bid_as_string2() {
+    return [
+      str(this.bags, '_'),
+      str(this.ourteam.bid - this.overlap, 'G'),
+      str(this.overlap, 'X'),
+      str(this.opponents.bid - this.overlap, 'R'),
+    ].join('').split('')
+  }
+  get progress_as_string() {
+    return [
+      str(this.ourteam.books, 'G'),
+      str(this.unplayed, '_'),
+      str(this.opponents.books, 'R'),
+    ].join('').split('');
   }
 
-  boot(player: Player) {
-    const { terminal } = player;
-    if (!(terminal instanceof VacantTerminal)) {
-      terminal.finished = new Date;
-      if (terminal instanceof WebTerminal) TerminalRestApiClient.deleteTerminal('Game', this.game.id, terminal.id);
-      player.terminal = new VacantTerminal({ history: terminal.history });
-    }
-  }
-
-  get terminal() { return this.players[0].terminal }
-  get Perspective() { return (this.perspective + this.game.perspective) % 4; }
-  set Perspective(p: number) { this.perspective = (this.perspective + p) % 4; }
-  get players() {
-    return (
-      [
-        ...this.game.playersInPerspective,
-        ...this.game.playersInPerspective
-      ])
-      .slice(this.perspective % 4, this.perspective + 4);
-  }
-  get status() {
-    return this.perspective
-      ? Object.assign(new Game(), this.game, { players: this.players }).status
-      : this.game.status;
-  }
 }

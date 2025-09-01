@@ -1,4 +1,4 @@
-export * from './Game';
+export * from './SpadesGame';
 export * from './Book';
 export * from './Player';
 export * from './Card';
