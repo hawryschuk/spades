@@ -5,11 +5,12 @@ import { SpadesService } from "../../../business/SpadesService";
 import { CommonModule } from '@angular/common';
 import { Util } from '@hawryschuk-common/util';
 import { SpadesComponent } from './spades/spades.component';
+import { SpadesGame } from 'business/SpadesGame';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, ServiceCenterComponent,SpadesComponent],
+  imports: [CommonModule, ServiceCenterComponent, SpadesComponent],
   providers: [],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -21,30 +22,36 @@ export class AppComponent implements OnInit {
   serviceCenter = new ServiceCenter().register(SpadesService);
   get client() { return ServiceCenterClient.getInstance(this.terminal); }
 
+  pauseTime = 20;
+
+  get game() { return (window as any).game as SpadesGame }
+
   async ngOnInit() {
-    Object.assign(window, { app: this });
+    Object.assign(window, { app: this, Util });
 
 
-    /** User: Alex : Startsd a 1 person game of stock ticker */
+    /** User: Alex : Started a 1 person game of stock ticker */
     await this.serviceCenter.join(this.terminal);
     await this.terminal.answer({
       name: 'alex',
       service: 'Spades',
       menu: [
         'Create Table',
+        'Invite Robot',
         'Sit',
+        'Invite Robot',
+        'Invite Robot',
         'Ready',
-        'Invite Robot',
-        'Invite Robot',
-        'Invite Robot',
       ],
-      bid: 3,
     });
 
     return;
-    for (let i = 1; i <= 13; i++) {
-      const [{ choices }] = await Util.waitUntil(() => this.terminal.prompts.discard);
-      await this.terminal.answer({ discard: choices![0].value });
+    await Util.waitUntil(() => this.game);
+    while (!this.game.finished) {
+      await Util.waitUntil(() => this.game.finished || this.terminal.prompts.discard || this.terminal.prompts.bid, { pause: 50 });
+      if (this.terminal.prompts.bid) await this.terminal.answer({ bid: 2 });
+      if (this.terminal.prompts.discard) await this.terminal.answer({ discard: this.terminal.prompts.discard[0].choices![0].value });
+      await Util.pause(this.pauseTime);
     }
     debugger;
     return;

@@ -59,35 +59,35 @@
     <div *ngIf="terminal().prompts.bid && game.turn==players.south" id="your-bid">
         <div *ngIf="{ clashed: game.teams[0].bid + game.teams[1].bid - 13 } as vars2">
 
-            <div [style.margin-left.px]="0" class="dot" (click)="books=0" [attr.data-value]="">
+            <div [style.margin-left.px]="0" class="dot" (click)="bid=0" [attr.data-value]="">
                 <div style="position:absolute; margin-top:-20px" class="label"> Nil </div>
             </div>
 
             <div *ngFor="let card of game.player.cards; let index=index" [style.margin-left.px]="38 + index*21.5"
-                class="dot" (click)="books=index+1" [class.claimed]="books >= (index+1)"
-                [class.clashed]="vars2.clashed>0 && index >= books - vars2.clashed && index < books"
+                class="dot" (click)="bid=index+1" [class.claimed]="bid >= (index+1)"
+                [class.clashed]="vars2.clashed>0 && index >= bid - vars2.clashed && index < bid"
                 [attr.data-value]="'game.bid_as_string2[index]'">
                 <div style="position:absolute; margin-top:-20px" class="label">{{index+1}}</div>
             </div>
 
             <p style="text-align:center; border: 1px solid black; width: 133px; font-weight: bold; position: absolute; margin-left: 38px; margin-top: 60px; color:green"
-                id="our-bid"> {{ books }} + {{ game.players[2].bid ?? '?' }}</p>
+                id="our-bid"> {{ bid }} + {{ game.players[2].bid ?? '?' }}</p>
             <p style="text-align:center; border: 1px solid black; width: 133px; font-weight: bold; position: absolute; margin-left: 175px; margin-top: 60px; color:red"
                 id="their-bid"> {{ players.west.bid ?? '?' }} + {{ players.east.bid ?? '?' }} </p>
 
             <button
                 style="position: absolute; margin-top: 100px; margin-left: 110px; width: 120px; height: 40px; text-align: center;"
-                (click)="terminal().respond(books,'bid')">
+                (click)="terminal().respond(bid,'bid')">
                 Make Bid
             </button>
         </div>
     </div>
 
     <!-- Each player's card played-->
-    <app-card *ngIf="game.book[directions!.south] as card" [card]="card" name="south"> </app-card>
-    <app-card *ngIf="game.book[directions!.west] as card" [card]="card" name="west"> </app-card>
-    <app-card *ngIf="game.book[directions!.north] as card" [card]="card" name="north"> </app-card>
-    <app-card *ngIf="game.book[directions!.east] as card" [card]="card" name="east"> </app-card>
+    <app-card *ngIf="book[directions!.south] as card" [card]="card" name="south"> </app-card>
+    <app-card *ngIf="book[directions!.west] as card" [card]="card" name="west"> </app-card>
+    <app-card *ngIf="book[directions!.north] as card" [card]="card" name="north"> </app-card>
+    <app-card *ngIf="book[directions!.east] as card" [card]="card" name="east"> </app-card>
 
     <!-- <div class="status-message"> <span> $status </span> </div>
     <div class="autoplay">
@@ -125,8 +125,8 @@
 
     <!-- Each of the game perspectives cards -->
     <app-card *ngFor="let card of players.south.cards; let index = index" [name]="'card'+(index+1)" [card]="card"
-        [attr.data-clickable]="discardables?.includes(card)" [clickable]="discardables?.includes(card)"
-        (click)="terminal().prompts.discard && discardables?.includes(card) && terminal().respond(card,'discard')">
+        [clickable]="!!discardables?.includes(card)"
+        (click)="discardables?.includes(card) && terminal().respond(card,'discard')">
     </app-card>
 
 </ng-container>
