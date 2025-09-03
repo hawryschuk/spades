@@ -23,14 +23,13 @@ const str = (count: number, char = ' ') => {
   standalone: true,
 })
 export class SpadesComponent {
-  private updated$ = signal(new Date);
   SpadesGame = SpadesGame;
   terminal = input.required<Terminal>();
   bid = 1;
+  private updated$ = onTerminalUpdated({ component: this, handler: () => { this.updated$.set(new Date); }, terminal: this.terminal });
 
   constructor() {
     Object.assign(window, { spades: this });
-    onTerminalUpdated({ component: this, handler: () => { this.updated$.set(new Date); }, terminal: this.terminal });
   }
 
   scoreWidth(totalScore: number) { return Math.max(0, 122 * totalScore / 500) }

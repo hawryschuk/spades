@@ -1,18 +1,7 @@
 import { Util } from "@hawryschuk-common/util";
-import { BaseService, Prompt, Terminal } from "@hawryschuk-terminal-restapi";
-import { ServiceRobot } from "@hawryschuk-terminal-restapi/ServiceRobot";
+import { BaseService } from "@hawryschuk-terminal-restapi";
 import { GamePlay, SpadesGame } from "./SpadesGame";
-
-export class SpadesRobot extends ServiceRobot {
-    constructor(terminal: Terminal) { super(terminal); }
-    async handlePrompts(prompts: Record<string, Prompt[]>): Promise<void> {
-        // const game = new SpadesGame(this.client.Table!.sitting, this.client.Service!.Instance?.messages!, this.client.UserName!);
-        const random = (name: string) => this.terminal.answer({ [name]: Util.randomElement(prompts[name][0]!.choices!.map(c => c.value)) });
-        if (prompts.bid) await this.terminal.answer({ bid: 2 }); //await random('bid');
-        if (prompts.discard) await random('discard');
-    }
-}
-
+import { SpadesRobot } from "./SpadesRobot";
 
 /** Stock-Ticker : spot prices, player assets */
 export class SpadesService<T = any> extends BaseService {
@@ -33,10 +22,10 @@ export class SpadesService<T = any> extends BaseService {
             if (move === 'bid') {
                 /** Send all players their cards */
                 if (players.every(player => !(player.bid! >= 0)))
-                    for (const player of players) {
-                        const terminal = this.table.sitting[players.indexOf(player)];
-                        await this.send<GamePlay>({ cards: [...player.cards], name: player.name }, terminal);
-                    }
+                    await Promise.all(players.map(player => this.send<GamePlay>({
+                        name: player.name,
+                        cards: [...player.cards],
+                    }, [player.name])));
                 await Util.retry({
                     onError,
                     pause: 500,

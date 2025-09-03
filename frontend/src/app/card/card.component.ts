@@ -1,14 +1,15 @@
-import { Component, input, Input, OnInit, output } from '@angular/core';
-import { Card } from 'business/SpadesGame';
+import { Component, input, output } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-card',
   templateUrl: './card.component.html',
   styleUrls: ['./card.component.scss'],
-  standalone: true
+  standalone: true,
+  imports: [CommonModule]
 })
 export class CardComponent {
-  card = input.required<Card>();
+  card = input.required<{ suit: any; value: any; }>();
   clickable = input<boolean>();
   name = input.required<string>();
   click = output();

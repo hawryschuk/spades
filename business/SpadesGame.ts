@@ -2,6 +2,7 @@ import { Util } from '@hawryschuk-common/util';
 
 export type Suit = typeof SpadesGame.CARD_SUITS[number];
 export type CardValue = typeof SpadesGame.CARD_VALUES[number];
+export type ICard = { suit: any; value: any; }
 export type Card = { suit: Suit; value: CardValue; }
 export type Bid = typeof SpadesGame.BIDS[number];
 export type Move = 'discard' | 'bid';

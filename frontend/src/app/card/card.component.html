@@ -1,4 +1,8 @@
-<div [attr.data-can-play]="clickable()" (click)="click.emit()" [title]="card().value + ' of ' + card().suit" [attr.data-value]="card().value" [attr.data-suit]="card().suit" class="card {{name()}}">
+<div *ngIf="card()" [attr.data-can-play]="clickable()" (click)="click.emit()" [title]="card().value + ' of ' + card().suit" [attr.data-value]="card().value" [attr.data-suit]="card().suit" class="card {{name()}}">
     <span class="value"> </span>
     <span class="suit"> </span>
+</div>
+
+<div *ngIf="!card()">
+    ?
 </div>
